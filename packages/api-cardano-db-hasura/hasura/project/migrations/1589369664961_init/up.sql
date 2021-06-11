@@ -34,7 +34,6 @@ CREATE VIEW "Block" AS
            FROM tx
           WHERE (tx.block_id = block.id)), (0)::NUMERIC))::bigint AS fees,
     block.hash,
-    block.merkle_root AS "merkleRoot",
     block.block_no AS "number",
     block.op_cert AS "opCert",
     previous_block.hash AS "previousBlockHash",
@@ -159,17 +158,24 @@ SELECT
   pool.hash_id AS "hash_id",
   pool.id AS "update_id",
   pool.margin AS "margin",
-  pool_meta_data.hash AS "metadataHash",
+  pool_metadata_ref.hash AS "metadataHash",
   block.block_no AS "blockNo",
   pool.registered_tx_id AS "updated_in_tx_id",
   pool.pledge AS "pledge",
   ( SELECT stake_address.view FROM stake_address WHERE stake_address.hash_raw = pool.reward_addr) AS "rewardAddress",
-  pool_meta_data.url AS "url"
+  pool_metadata_ref.url AS "url"
 FROM pool_update AS pool
-  LEFT JOIN pool_meta_data ON pool.meta_id = pool_meta_data.id
+  LEFT JOIN pool_metadata_ref ON pool.meta_id = pool_metadata_ref.id
   INNER JOIN tx ON pool.registered_tx_id = tx.id
   INNER JOIN latest_block_times ON latest_block_times.hash_id = pool.hash_id
   INNER JOIN block ON tx.block_id = block.id AND latest_block_times.blockTime = block.time;
+
+CREATE VIEW "StakePoolOwner" AS
+SELECT
+  stake_address.hash_raw as "hash",
+  pool_owner.pool_hash_id as "pool_hash_id"
+FROM pool_owner
+  LEFT JOIN stake_address ON pool_owner.addr_id = stake_address.id;
 
 CREATE VIEW "StakePoolRetirement" AS
 SELECT
